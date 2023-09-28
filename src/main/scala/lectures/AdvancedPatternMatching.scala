@@ -81,6 +81,24 @@ object AdvancedPatternMatching extends App {
 
   println(decomposed)
 
+  // custom return types for unapply
+
+  abstract class Wrapper[T] {
+    def isEmpty: Boolean
+    def get: T
+  }
+
+  object PersonWrapper {
+    def unapply(person: Person): Wrapper[String] = new Wrapper[String] {
+      def isEmpty: Boolean = false
+      def get: String = person.name
+    }
+  }
+
+  println(bob match {
+    case PersonWrapper(n) => s"This person's name is $n"
+    case _ => "......."
+  })
 
 }
 
