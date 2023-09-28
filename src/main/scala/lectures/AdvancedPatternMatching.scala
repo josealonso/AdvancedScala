@@ -26,4 +26,50 @@ object AdvancedPatternMatching extends App {
    }
    println(legalStatus)
 
+  /*
+    Exercise: pattern matching for even numbers
+   */
+  object even {
+    def unapply(arg: Int): Option[Boolean] =
+      if (arg % 2 == 0) Some(true)
+      else None
+  }
+
+  object singleDigit {
+    def unapply(arg: Int): Option[Boolean] =
+      if (arg > -10 && arg < 10) Some(true)
+      else None
+  }
+//  val myInteger = new Integer2(3)
+  val num = 4
+  val mathProperty = num match {
+    case singleDigit(_) => "single digit"
+    case even(_) => "an even number"
+    case _ => "no property"
+  }
+
+  println(mathProperty)
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
