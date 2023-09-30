@@ -47,13 +47,39 @@ object CurriesPAF extends App {
   val fillInTheBlanks = concatenator("Hello, ", _, _)
   println(fillInTheBlanks("Alice", " good morning!"))
 
+  /*
+    EXERCISES
+   */
 
+  // 1.- Process a list of numbers and return their string representations with different formats.
+  // Use %4.2f, %8.6f and %14.12f with a curried formatter.
+  def curriedFormatter(s: String)(number: Double): String = s.format(number)
+  val numbers = List(Math.PI, Math.E, 1, 9.8, 1.3e-12)
+  val simpleFormat = curriedFormatter("%4.2f") _ // lift or eta-expansion
+  println(numbers.map(simpleFormat))
+
+  // 2.- Difference between functions and methods.
+  def byName(n: => Int) = n + 1
+  def byFunction(f: () => Int) = f() + 1
+  def method3: Int = 42
+  def parenMethod(): Int = 42
+  /*
+    Call the byName and byFunction methods, using the following parameters:
+    int, method3, parenMethod, lambda and PAF.
+   */
+  println(byName(4))
+  println(byName(method3))
+  println(byName(parenMethod()))  // In Scala 3, parentheses when calling methods are compulsory
+//  println(byName(() => 4))    // wrong
+    println(byName((() => 4)()))  // correct
+
+//  println(byFunction(x: Int => 4))
+//  println(byFunction(method3))   // wrong, compiler does NOT do eta-expansion
+  println(byFunction(parenMethod))  // compiler does eta-expansion when the method is declared with parentheses
+  println(byFunction(parenMethod _))  // also works, but the underscore is unnecessary
+  println("======= " + byFunction(() => 4))
 }
 
-/*
-- Never use Array unless you are either 1) doing Java interop or 2) writing super high performance code that you know is a performance bottleneck for your app)
-
- */
 
 
 
