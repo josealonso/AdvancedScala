@@ -16,7 +16,7 @@ abstract class MyStream[+A] {
   def tail: MyStream[A]
 
   def #::[B >: A](element: B): MyStream[B] // prepend operator
-  def ++[B >: A](anotherStream: MyStream[B]): MyStream[B] // concatenate two streams
+  def ++[B >: A](anotherStream: => MyStream[B]): MyStream[B] // concatenate two streams
 
   def forEach(f: A => Unit): Unit
   def map[B](f: A => B): MyStream[B]
@@ -45,7 +45,7 @@ object EmptyStream extends MyStream[Nothing] {
   override def tail: MyStream[Nothing] = throw new NoSuchElementException
 
   override def #::[B >: Nothing](element: B): MyStream[B] = new Cons[B](element, this)
-  override def ++[B >: Nothing](anotherStream: MyStream[B]): MyStream[B] =
+  override def ++[B >: Nothing](anotherStream: => MyStream[B]): MyStream[B] =
   // new Cons[B](anotherStream.head, anotherStream.tail[B])
     anotherStream
 
@@ -66,7 +66,7 @@ class Cons[+A](hd: A, tl: => MyStream[A]) extends MyStream[A] {
     // val element = new Cons(1, EmptyStream)
     // val prepend = 1 #:: element = new Cons(1, element)
   override def #::[B >: A](element: B): MyStream[B] = new Cons(element, this)
-  override def ++[B >: A](anotherStream: MyStream[B]): MyStream[B] =
+  override def ++[B >: A](anotherStream: => MyStream[B]): MyStream[B] =  // call by need
     new Cons(head, tail ++ anotherStream)
 
   override def forEach(f: A => Unit): Unit = {
@@ -74,7 +74,7 @@ class Cons[+A](hd: A, tl: => MyStream[A]) extends MyStream[A] {
     tail.forEach(f)
   }
   override def map[B](f: A => B): MyStream[B] = new Cons(f(head), tail.map(f))  // preserves lazy evaluation
-  override def flatMap[B](f: A => MyStream[B]): MyStream[B] = f(head) ++ tail.flatMap(f)  // preserves lazy evaluation
+  override def flatMap[B](f: A => MyStream[B]): MyStream[B] = f(head) ++ tail.flatMap(f)  // The error was in flatMap
   override def filter(predicate: A => Boolean): MyStream[A] =
     if (predicate(head)) new Cons(head, tail.filter(predicate))
     else tail.filter(predicate)       // preserves lazy evaluation
@@ -102,5 +102,8 @@ object StreamsPlayground extends App {
 
   // map, flatMap
   println(startFrom0.map(_ * 2).take(100).toList())
-  println(startFrom0.flatMap(x => new Cons(x, new Cons(x + 1, EmptyStream))).take(10).toList())  // This causes SO ("stack overflow") error
+  println(startFrom0.flatMap(x => new Cons(x, new Cons(x + 1, EmptyStream))).take(10).toList())
+  println(startFrom0.filter(_ < 10).take(10).toList())
+  println(startFrom0.filter(_ < 10).take(10).take(20).toList())
+//  println(startFrom0.filter(_ < 10).take(11))     // Error
 }
