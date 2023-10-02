@@ -85,9 +85,22 @@ class Cons[+A](hd: A, tl: => MyStream[A]) extends MyStream[A] {
 }
 
 object MyStream {
-  def from[A](start: A)(generator: A => A): MyStream[A] = ???
+  def from[A](start: A)(generator: A => A): MyStream[A] =
+    new Cons(start, MyStream.from(generator(start))(generator))
 }
 
 object StreamsPlayground extends App {
+  val naturals = MyStream.from(1)(_ + 1)
+  println(naturals.head)
+  println(naturals.tail.head)
+  println(naturals.tail.tail.head)
 
+  val startFrom0 = 0 #:: naturals
+  println(startFrom0.head)
+
+  startFrom0.take(10000).forEach(println)
+
+  // map, flatMap
+  println(startFrom0.map(_ * 2).take(100).toList())
+  println(startFrom0.flatMap(x => new Cons(x, new Cons(x + 1, EmptyStream))).take(10).toList())  // This causes SO ("stack overflow") error
 }
