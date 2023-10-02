@@ -106,4 +106,47 @@ object StreamsPlayground extends App {
   println(startFrom0.filter(_ < 10).take(10).toList())
   println(startFrom0.filter(_ < 10).take(10).take(20).toList())
 //  println(startFrom0.filter(_ < 10).take(11))     // Error
+
+  // Exercises on streams
+  // 1.- stream of Fibonacci numbers
+  def fibonacci(first: BigInt, second: BigInt): MyStream[BigInt] = {
+    new Cons(first, fibonacci(second, first + second))
+  }
+
+  println(fibonacci(1, 1).take(100).toList())
+
+  // 2.- stream of prime numbers with Eratosthenes' sieve
+  /*
+    [2 3 4 ....]
+    filter out all numbers divisible by 2
+    [2 3 5 7 9 11 ....]
+    filter out all numbers divisible by 3
+    [2 3 5 7 11 13 ....]
+    filter out all numbers divisible by 5
+   */
+  def eratosthenes(numbers: MyStream[Int]): MyStream[Int] =
+  if (numbers.isEmpty) numbers
+  else new Cons(numbers.head, eratosthenes(numbers.tail.filter(_ % numbers.head != 0)))
+
+  // Print the first hundred prime numbers
+  println(eratosthenes(MyStream.from(2)(_ + 1)).take(100).toList())
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
