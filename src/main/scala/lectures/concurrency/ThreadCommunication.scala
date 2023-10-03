@@ -44,8 +44,38 @@ object ThreadCommunication extends App {
     producer.start()
   }
 
-  naiveProdCons()
+//  naiveProdCons()
+  smartProdCons()
 
+  // wait and notify (only work in synchronized expressions)
+  def smartProdCons() = {
+    val container = new SimpleContainer
+
+    val consumer = new Thread(() => {
+      println("[consumer] waiting....")
+      container.synchronized {
+        container.wait()
+      }
+
+      // container must have some value
+      println("[consumer] I have consumed " + container.get())
+    })
+
+    val producer = new Thread(() => {
+      println("[producer] computing....")
+      Thread.sleep(600)
+      val value = 4
+
+      container.synchronized {
+        println("[producer] I have produced the value " + value)
+        container.set(value)
+        container.notify()
+      }
+    })
+
+    consumer.start()
+    producer.start()
+  }
 }
 
 /*
