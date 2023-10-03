@@ -1,5 +1,8 @@
 package lectures.concurrency
 
+import scala.collection.mutable
+import scala.util.Random
+
 object ThreadCommunication extends App {
 
   /*
@@ -45,7 +48,7 @@ object ThreadCommunication extends App {
   }
 
 //  naiveProdCons()
-  smartProdCons()
+//  smartProdCons()
 
   // wait and notify (only work in synchronized expressions)
   def smartProdCons() = {
@@ -76,6 +79,61 @@ object ThreadCommunication extends App {
     consumer.start()
     producer.start()
   }
+
+  def prodConsBuffer(): Unit = {
+    val BUFFER_CAPACITY = 3
+    val buffer = new mutable.Queue[Int]
+    val capacity = BUFFER_CAPACITY
+
+    val consumer = new Thread(() => {
+      val random = new Random()
+
+      while (true) {
+        buffer.synchronized {
+          if (buffer.isEmpty) {
+            println("[consumer] buffer empty, waiting...")
+            buffer.wait()
+          }
+
+          // there must be at least one value in the buffer
+          val value = buffer.dequeue()
+          println("[consumer] I have consumed " + value)
+
+          buffer.notify()
+        }
+
+        Thread.sleep(random.nextInt(500))
+      }
+    })
+
+    val producer = new Thread(() => {
+      val random = new Random()
+      var i = 0
+
+      while (true) {
+        buffer.synchronized {
+          if (buffer.size == capacity) {
+            println("[producer] buffer is full, waiting...")
+            buffer.wait()
+          }
+
+          // there must be at least one empty space in the buffer
+          println("[producer] I have produced " + i)
+          buffer.enqueue(i)
+
+          buffer.notify()
+          i += 1
+        }
+
+        Thread.sleep(random.nextInt(500))
+      }
+    })
+
+    consumer.start()
+    producer.start()
+  }
+
+  prodConsBuffer()
 }
 
 /*
