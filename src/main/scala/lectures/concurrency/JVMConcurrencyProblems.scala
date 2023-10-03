@@ -51,10 +51,68 @@ object JVMConcurrencyProblems {
     }
   }
 
+  /*
+    Exercises
+    1.- create "inception threads"
+      thread 1
+        -> thread 2
+            -> thread 3
+              ..........
+       each thread prints "hello from thread $i" in reverse order
+
+    2.- What's the max/min value of x?
+    3.- "sleep fallacy: what's the value of the message"
+   */
+
+  // 1
+  def inceptionThreads(maxThreads: Int, i: Int = 1): Thread =
+    new Thread(() => {
+      if (i < maxThreads)  {
+        val newThread = inceptionThreads(maxThreads, i + 1)
+        newThread.start()
+        newThread.join()
+      }
+      println(s"Hello from thread $i")
+    })
+
+  // 2
+  def minMaxX(): Unit = {
+    var x = 0
+    val threads = (1 to 100).map(_ => new Thread(() => x += 1))
+    threads.foreach(_.start())
+    Thread.sleep(200)
+    println(s"x is $x")
+  }
+
+  // 3
+  /*
+    almost always, message = "Scala is awesome"
+    but it is NOT guaranteed.
+    A*
+  */
+  def demoSleepFallacy(): Unit = {
+    var message = ""
+    val awesomeThread = new Thread(() => {
+      Thread.sleep(200)
+      message = "Scala is awesome"
+    })
+
+    message = "are you sure?"
+    awesomeThread.start()
+    Thread.sleep(201)
+    // A* Solution to guarantee that: join the worker thread
+    awesomeThread.join()
+    println(message)
+  }
+
+
   def main(args: Array[String]): Unit = {
 
     // runInParallel()
-    demoBankingProblem()
+    // demoBankingProblem()
+    // minMaxX()
+    demoSleepFallacy()
+    // inceptionThreads(10).start()
   }
 
 }
