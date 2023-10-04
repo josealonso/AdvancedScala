@@ -1,7 +1,7 @@
 package lectures.concurrency
 
 import scala.concurrent.{Await, Future, Promise}
-import scala.util.{Failure, Random, Success}
+import scala.util.{Failure, Random, Success, Try}
 import scala.concurrent.duration.*
 
 // important for futures
@@ -18,13 +18,13 @@ object FuturesPromises extends App {
     computation
   } // (global) is injected by the compiler
 
-  println(aFuture.value)   // returns None
+  println(aFuture.value) // returns None
 
   println("Waiting on the future")
   aFuture.onComplete {
     case Success(value) => println(s"The result is $value")
     case Failure(exception) => println(s"I have failed with $exception")
-  }  // onComplete is called by some thread, we do not know which one
+  } // onComplete is called by some thread, we do not know which one
 
   Thread.sleep(2000)
 
@@ -60,18 +60,19 @@ object FuturesPromises extends App {
       Profile(bfId, names(bfId))
     }
   }
-    // client: Mark to poke Bill
+
+  // client: Mark to poke Bill
   val mark = SocialNetwork.fetchProfile("fb.id.1")
-//  mark.onComplete {
-//    case Success(markProfile) => {
-//      val bill = SocialNetwork.fetchBestFriend(markProfile)
-//      bill.onComplete {
-//        case Success(billProfile) => markProfile.poke(billProfile)
-//        case Failure(exception) => exception.printStackTrace()
-//      }
-//    }
-//    case Failure(exception) => exception.printStackTrace()
-//  }
+  //  mark.onComplete {
+  //    case Success(markProfile) => {
+  //      val bill = SocialNetwork.fetchBestFriend(markProfile)
+  //      bill.onComplete {
+  //        case Success(billProfile) => markProfile.poke(billProfile)
+  //        case Failure(exception) => exception.printStackTrace()
+  //      }
+  //    }
+  //    case Failure(exception) => exception.printStackTrace()
+  //  }
 
   // functional composition of futures
   // map, flatMap, filter
@@ -103,6 +104,7 @@ object FuturesPromises extends App {
 
   // online banking app
   case class User(name: String)
+
   case class Transaction(sender: String, receiver: String, amount: Double, status: String)
 
   object BankingApp {
@@ -127,14 +129,14 @@ object FuturesPromises extends App {
         transaction <- createTransaction(user, merchantName, cost)
       } yield transaction.status
 
-      Await.result(transactionStatusFuture, 2.seconds)  // implicit conversions -> pimp my library
+      Await.result(transactionStatusFuture, 2.seconds) // implicit conversions -> pimp my library
     }
   }
 
   println(BankingApp.purchase("José", "phone", "My store", 3000))
 
   // promises
-  val promise = Promise[Int]()  // "controller" over a future
+  val promise = Promise[Int]() // "controller" over a future
   val future = promise.future
 
   /*
@@ -158,6 +160,96 @@ object FuturesPromises extends App {
 
   producer.start()
   Thread.sleep(1000)
+
+  /*
+    EXERCISES
+    1.- fulfill a future immediately with a value
+    2.- inSequence(fa, fb). Run two futures in sequence.
+    3.- first(fa, fb) => new future with the first value of both futures.
+    4.- last(fa, fb) => new future with the last value of both futures.
+    5.- retryUntil[T](action: () => Future[T], condition: T => Boolean): Future[T]
+   */
+
+  // 1
+  def fulfillImmediately[T](value: T): Future[T] = Future(value)
+
+  // 2
+  def inSequence[A, B](first: Future[A], second: Future[B]): Future[B] =
+    first.flatMap(_ => second)
+
+  // 3
+  def first[A](fa: Future[A], fb: Future[A]): Future[A] = {
+    val promise = Promise[A]
+
+    //    def tryComplete(promise: Promise[A], result: Try[A]) = result match {
+    //      case Success(r) => try {
+    //        promise.success(r)
+    //      } catch {
+    //        case _ =>
+    //      }
+    //      case Failure(t) => try {
+    //        promise.failure(t)
+    //      } catch {
+    //        case _ =>
+    //      }
+    //    }
+    //
+    //    fa.onComplete(tryComplete(promise, _))
+    //    fb.onComplete(tryComplete(promise, _))
+
+    fa.onComplete(promise.tryComplete)
+    fb.onComplete(promise.tryComplete)
+
+    promise.future
+  }
+
+  // 4
+  def last[A](fa: Future[A], fb: Future[A]): Future[A] = {
+    val bothPromise = Promise[A]
+    val lastPromise = Promise[A]
+    val checkAndComplete = (result: Try[A]) =>
+      if (!bothPromise.tryComplete(result))
+        lastPromise.complete(result)
+
+    fa.onComplete(checkAndComplete)
+    fb.onComplete(checkAndComplete)
+
+    lastPromise.future
+  }
+
+  val fast = Future {
+    Thread.sleep(100)
+    42
+  }
+
+  val slow = Future {
+    Thread.sleep(200)
+    45
+  }
+  first(slow, fast).foreach(println)
+  last(slow, fast).foreach(println)
+
+  Thread.sleep(1000)
+
+  // 5
+  def retryUntil[A](action: () => Future[A], condition: A => Boolean): Future[A] =
+    action()
+    .filter(condition)
+    .recoverWith {
+        case _ => retryUntil(action, condition)
+    }
+
+  val random = new Random()
+  val action = () => Future {
+    Thread.sleep(100)
+    val nextValue = random.nextInt(100)
+    println("generated " + nextValue)
+    nextValue
+  }
+
+  retryUntil(action, (x: Int) => x < 10).foreach(result => println("settled at " + result))
+  Thread.sleep(10000)
+
 }
 
 
