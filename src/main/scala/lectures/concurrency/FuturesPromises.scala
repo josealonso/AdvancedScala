@@ -1,7 +1,8 @@
 package lectures.concurrency
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future, Promise}
 import scala.util.{Failure, Random, Success}
+import scala.concurrent.duration.*
 
 // important for futures
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -99,6 +100,64 @@ object FuturesPromises extends App {
 
   val fallbackResult = SocialNetwork.fetchProfile("unknown id").fallbackTo(
     SocialNetwork.fetchProfile("fb.id.0"))
+
+  // online banking app
+  case class User(name: String)
+  case class Transaction(sender: String, receiver: String, amount: Double, status: String)
+
+  object BankingApp {
+    val name = "My Bank"
+
+    def fetchUser(name: String): Future[User] = Future {
+      Thread.sleep(500)
+      User(name)
+    }
+
+    def createTransaction(user: User, merchantName: String, amount: Double): Future[Transaction] = Future {
+      Thread.sleep(1000)
+      Transaction(user.name, merchantName, amount, "SUCCESS")
+    }
+
+    def purchase(username: String, item: String, merchantName: String, cost: Double): String = {
+      // fetch the user from the DB
+      // create a transaction
+      // WAIT for the transaction to finish
+      val transactionStatusFuture = for {
+        user <- fetchUser(username)
+        transaction <- createTransaction(user, merchantName, cost)
+      } yield transaction.status
+
+      Await.result(transactionStatusFuture, 2.seconds)  // implicit conversions -> pimp my library
+    }
+  }
+
+  println(BankingApp.purchase("José", "phone", "My store", 3000))
+
+  // promises
+  val promise = Promise[Int]()  // "controller" over a future
+  val future = promise.future
+
+  /*
+     The future-promise pattern separates the concern of handling futures and
+     of writing to a promise, eliminating concurrency issues almost completely.
+     As it gives you almost complete control over where and how you want to set a value to a future.
+   */
+  // thread1 - consumer
+  future.onComplete {
+    case Success(r) => println("[consumer] I have received " + r)
+  }
+
+  // thread1 - producer
+  val producer = new Thread(() => {
+    println("[producer] crunching numbers...")
+    Thread.sleep(500)
+    // fulfilling the promise
+    promise.success(23)
+    println("[producer] done")
+  })
+
+  producer.start()
+  Thread.sleep(1000)
 }
 
 
