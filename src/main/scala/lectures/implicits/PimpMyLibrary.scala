@@ -68,4 +68,4 @@ object PimpMyLibrary extends App {
   - avoid implicit defs
   - package implicits clearly, bring into scope only what you need
   - if you need conversions, make them specific.
- */
+*/
