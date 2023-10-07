@@ -18,7 +18,7 @@ object TypeMembers extends App {
 
 //  val cat: ac.BoundedAnimal = new Cat    // not valid
 
-  val pup: ac.SuperBoundedAnimal = new Cat
+//  val pup: ac.SuperBoundedAnimal = new Cat    // not valid
   val cat: ac.AnimalC = new Cat
 
   type CatAlias = Cat
@@ -37,7 +37,7 @@ object TypeMembers extends App {
   // .type
   type CatsType = cat.type
   val newCat: CatsType = cat
-  new CatsType
+  // new CatsType    // not valid
 
 
 
