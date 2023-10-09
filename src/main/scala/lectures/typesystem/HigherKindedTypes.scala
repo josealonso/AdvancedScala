@@ -15,7 +15,7 @@ object HigherKindedTypes extends App {
     override def map[B](f: A => B): List[B] = list.map(f)
   }
 
-  def multiply[F[_], A, B](implicit ma: Monad[F, A], mb: Monad[F, B]): F[(A, B)] = {
+  def multiply[F[_], A, B](ma: Monad[F, A], mb: Monad[F, B]): F[(A, B)] = {
     for {
       a <- ma
       b <- mb
